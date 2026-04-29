@@ -1,4 +1,4 @@
-"""Instagram caption generator for MilkLab cafe using Google Gemini AI."""
+"""Instagram caption generator for i love milk cafe using Google Gemini AI."""
 
 import os
 from dotenv import load_dotenv
@@ -26,7 +26,7 @@ def generate_captions(menu_name: str, price: str) -> dict[str, str]:
     Returns:
         Dictionary with 3 caption styles: cute, minimal, and gen_z
     """
-    prompt = f"""Generate 3 Instagram captions for a MilkLab cafe menu item. 
+    prompt = f"""Generate 3 Instagram captions for a i love milk cafe menu item. 
 Item: {menu_name}
 Price: {price}
 
