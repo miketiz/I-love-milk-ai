@@ -1,8 +1,21 @@
 """Instagram caption generator for i love milk cafe using Google Gemini AI."""
 
 import os
+import sys
 from dotenv import load_dotenv
-import google.generativeai as genai
+
+try:
+    import google.generativeai as genai
+except ModuleNotFoundError as exc:
+    raise ModuleNotFoundError(
+        "Missing dependency for the current Python interpreter. "
+        "Install it with: python -m pip install google-generativeai"
+    ) from exc
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
 
 # Load environment variables from .env file
 load_dotenv(dotenv_path=".env", override=True)
