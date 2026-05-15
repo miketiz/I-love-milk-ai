@@ -5,6 +5,7 @@ import sys
 from datetime import datetime, date
 from dotenv import load_dotenv
 import requests
+import html
 
 try:
     from sheets_client import get_sheet
@@ -47,7 +48,7 @@ def summarize_today(sheet):
 
 def send_telegram(token: str, chat_id: str, text: str) -> bool:
     url = f"https://api.telegram.org/bot{token}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text}
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
     try:
         resp = requests.post(url, data=payload, timeout=15)
         resp.raise_for_status()
@@ -82,16 +83,25 @@ def main():
 
     summary = summarize_today(sheet)
 
-    text_lines = [f"Morning Report for {summary['date']}", f"Rows: {summary['count']}", f"Total: {summary['total']:.2f} ฿"]
+    # Format message using HTML for nicer appearance
+    def esc(s: str) -> str:
+        return html.escape(str(s))
+
+    header = f"<b>Morning Report — {esc(summary['date'])}</b>"
+    stats = f"Rows: <b>{summary['count']}</b>\nTotal: <b>{summary['total']:.2f} ฿</b>"
+
+    body = header + "\n" + stats
+
     if summary.get("last_row"):
         lr = summary["last_row"]
-        text_lines.append("Last: " + " | ".join(lr))
+        # Make a compact preformatted line for the last row
+        # Join columns with tab-like spacing
+        pre = " | ".join(esc(c) for c in lr)
+        body += "\n\n<pre>Last: " + pre + "</pre>"
 
-    text = "\n".join(text_lines)
+    print(body)
 
-    print(text)
-
-    ok = send_telegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, text)
+    ok = send_telegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, body)
     if not ok:
         sys.exit(2)
 
