@@ -29,9 +29,13 @@ ENV STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
 ENV STREAMLIT_SERVER_FILE_WATCHER_ENABLED=false
 ENV STREAMLIT_LOGGER_LEVEL=warning
 ENV HF_HUB_OFFLINE=1
+ENV TRANSFORMERS_OFFLINE=1
+ENV TRANSFORMERS_CACHE=/tmp/transformers_cache
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 EXPOSE 8501
 
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
 
-ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]

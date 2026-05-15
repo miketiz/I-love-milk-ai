@@ -3,58 +3,57 @@ Prevent transformers vision modules and torchvision from loading on startup.
 This stops Streamlit's file watcher from scanning lazy-loaded vision modules.
 """
 import sys
+import types
 
 
-# List of vision model packages in transformers that require torchvision
-BLOCKED_VISION_MODULES = {
-    'transformers.models.zoedepth',
-    'transformers.models.aria',
-    'transformers.models.sam',
-    'transformers.models.blip',
-    'transformers.models.deta',
-    'transformers.models.dino',
-    'transformers.models.vit',
-    'transformers.image_processing_utils',
-    'transformers.image_processing',
-}
+# Pre-create dummy torch and torchvision modules BEFORE any imports
+dummy_torch = types.ModuleType('torch')
+dummy_torchvision = types.ModuleType('torchvision')
+dummy_torchvision_transforms = types.ModuleType('torchvision.transforms')
+dummy_torchvision_transforms_v2 = types.ModuleType('torchvision.transforms.v2')
+dummy_torchvision_transforms_v2.functional = types.ModuleType('torchvision.transforms.v2.functional')
+dummy_torchvision_io = types.ModuleType('torchvision.io')
+dummy_torchvision_ops = types.ModuleType('torchvision.ops')
+dummy_torchvision_ops.boxes = types.ModuleType('torchvision.ops.boxes')
 
-BLOCKED_PACKAGES = {
-    'torchvision',
-    'torch',
-}
+# Add dummy functions
+def dummy_read_image(*args, **kwargs):
+    raise ImportError("torchvision not available")
+
+def dummy_batched_nms(*args, **kwargs):
+    raise ImportError("torchvision not available")
+
+dummy_torchvision_io.read_image = dummy_read_image
+dummy_torchvision_ops.boxes.batched_nms = dummy_batched_nms
+
+# Register dummy modules in sys.modules
+sys.modules['torch'] = dummy_torch
+sys.modules['torchvision'] = dummy_torchvision
+sys.modules['torchvision.transforms'] = dummy_torchvision_transforms
+sys.modules['torchvision.transforms.v2'] = dummy_torchvision_transforms_v2
+sys.modules['torchvision.transforms.v2.functional'] = dummy_torchvision_transforms_v2.functional
+sys.modules['torchvision.io'] = dummy_torchvision_io
+sys.modules['torchvision.ops'] = dummy_torchvision_ops
+sys.modules['torchvision.ops.boxes'] = dummy_torchvision_ops.boxes
 
 
 class BlockVisionModules:
     """Block transformers vision models and torchvision."""
 
     def find_module(self, fullname, path=None):
-        # Check if module should be blocked
-        if fullname in BLOCKED_VISION_MODULES:
-            return self
-        
-        # Check if it's a submodule of blocked packages
-        for blocked in BLOCKED_VISION_MODULES:
-            if fullname.startswith(blocked + '.'):
-                return self
-        
         # Block torchvision and torch entirely
-        if fullname in BLOCKED_PACKAGES or fullname.startswith('torch') or fullname.startswith('torchvision'):
+        if fullname.startswith('torch'):
             return self
-
         return None
 
     def load_module(self, fullname):
-        # Mock torchvision and torch with dummy modules
-        if 'torchvision' in fullname or fullname == 'torch':
-            import types
-            module = types.ModuleType(fullname)
-            sys.modules[fullname] = module
-            return module
-        
-        # Block vision modules from loading
-        raise ImportError(
-            f"Module '{fullname}' requires dependencies not available in this environment"
-        )
+        # Return pre-made dummy modules
+        if fullname in sys.modules:
+            return sys.modules[fullname]
+        import types
+        module = types.ModuleType(fullname)
+        sys.modules[fullname] = module
+        return module
 
 
 # Install the import hook at the very start

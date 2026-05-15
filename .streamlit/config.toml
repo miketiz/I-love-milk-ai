@@ -1,2 +1,10 @@
 [server]
 fileWatcherType = "none"
+enableXsrfProtection = false
+runOnSave = false
+
+[logger]
+level = "warning"
+
+[client]
+showErrorDetails = false
