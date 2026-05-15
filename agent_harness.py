@@ -88,6 +88,13 @@ def run_agent(user_input: str) -> str:
     action = action_data.get("action")
     args = action_data.get("args", {})
 
+    if action == "unknown":
+        write_trace("unknown_action", {"action": action, "args": args})
+        return (
+            "ผมช่วยบันทึกยอดขายได้อย่างเดียวครับ "
+            "ลองพิมพ์เช่น: บันทึกยอดขายลาเต้น้ำผึ้ง 5 แก้ว ราคา 65 บาท"
+        )
+
     if action not in TOOLS:
         write_trace("unknown_action", {"action": action, "args": args})
         return f"⚠️ ไม่รู้จัก action: {action}"
