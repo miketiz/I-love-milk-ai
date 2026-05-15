@@ -25,16 +25,18 @@ SYSTEM_INSTRUCTION = """
 หน้าที่ของคุณคือแปลงข้อความผู้ใช้เป็น JSON action เท่านั้น.
 
 รูปแบบที่ถูกต้อง:
-{"action": "log_sale", "args": {"menu": "...", "quantity": N, "price": N}}
+1. บันทึกยอดขาย: {"action": "log_sale", "args": {"menu": "...", "quantity": N, "price": N}}
+2. ถามคำถาม: {"action": "answer_question", "args": {"question": "..."}}
 
-ถ้าผู้ใช้ไม่ได้สั่งบันทึกยอดขาย ให้ตอบ:
+ถ้าผู้ใช้ไม่ได้ถามข้อมูลหรือบันทึกยอดขาย ให้ตอบ:
 {"action": "unknown", "args": {}}
 
 ข้อบังคับ:
 - ตอบ JSON เท่านั้น ห้ามมีข้อความอื่น
-- quantity ต้องเป็นจำนวนเต็ม
-- price เป็นตัวเลข
-- ถ้าคิดว่าเป็นคำสั่งบันทึกยอดขาย ให้ตอบ action log_sale เสมอ
+- สำหรับ log_sale: quantity ต้องเป็นจำนวนเต็ม, price เป็นตัวเลข
+- สำหรับ answer_question: question เป็นข้อความแบบธรรมชาติภาษาไทย
+- ถ้าคิดว่าเป็นคำสั่งบันทึกยอดขาย ให้ตอบ action log_sale
+- ถ้าคิดว่าเป็นคำถามเกี่ยวกับเมนู ราคา เวลา ที่อยู่ หรือข้อมูลทั่วไป ให้ตอบ action answer_question
 - ถ้าไม่แน่ใจ ให้ตอบ unknown แทนการอธิบาย
 """.strip()
 
@@ -123,8 +125,9 @@ def run_agent(user_input: str) -> str:
     if action == "unknown":
         write_trace("unknown_action", {"action": action, "args": args})
         return (
-            "ผมช่วยบันทึกยอดขายได้อย่างเดียวครับ "
-            "ลองพิมพ์เช่น: บันทึกยอดขายลาเต้น้ำผึ้ง 5 แก้ว ราคา 65 บาท"
+            "ผมช่วยสองอย่างครับ: (1) บันทึกยอดขาย หรือ (2) ตอบคำถามเกี่ยวกับเมนู\n"
+            "ลองพิมพ์เช่น: 'บันทึกยอดขายลาเต้น้ำผึ้ง 5 แก้ว ราคา 65 บาท' "
+            "หรือ 'ลาเต้มีน้ำตาลไหม'"
         )
 
     if action not in TOOLS:
@@ -134,13 +137,42 @@ def run_agent(user_input: str) -> str:
     try:
         result = TOOLS[action](**args)
         write_trace("tool_result", {"action": action, "result": result})
-        return (
-            f"✅ บันทึกสำเร็จ\n"
-            f"เมนู: {result['menu']}\n"
-            f"จำนวน: {result['quantity']}\n"
-            f"ราคา: {result['price']}\n"
-            f"รวม: {result['total']} บาท"
-        )
+        
+        # Handle log_sale response
+        if action == "log_sale":
+            return (
+                f"✅ บันทึกสำเร็จ\n"
+                f"เมนู: {result['menu']}\n"
+                f"จำนวน: {result['quantity']}\n"
+                f"ราคา: {result['price']}\n"
+                f"รวม: {result['total']} บาท"
+            )
+        
+        # Handle answer_question response
+        elif action == "answer_question":
+            if result["status"] == "success":
+                context = result["context"]
+                # Call LLM to generate answer based on context
+                qa_prompt = (
+                    f"คำถาม: {user_input}\n\n"
+                    f"ข้อมูลจากฐานความรู้:\n{context}\n\n"
+                    f"โปรดตอบคำถามอย่างชัดเจนและเป็นมิตรตามข้อมูลข้างต้น"
+                )
+                qa_response = genai.GenerativeModel(MODEL).generate_content(qa_prompt)
+                answer = (qa_response.text or "").strip()
+                write_trace("qa_answer", {"question": user_input, "answer": answer})
+                return answer
+            elif result["status"] == "no_context":
+                return (
+                    "ขออภัย ผมไม่พบข้อมูลที่เกี่ยวข้องกับคำถามของคุณ\n"
+                    "ลองถามเกี่ยวกับเมนู เวลาเปิด ราคา หรือวิธีสั่งอะไรแบบนี้"
+                )
+            else:
+                return f"❌ ข้อผิดพลาด: {result.get('error', 'ไม่ทราบ')}"
+        
+        else:
+            return f"✅ สำเร็จ: {result}"
+            
     except (TypeError, ValueError) as exc:
         write_trace("tool_error", {"action": action, "args": args, "error": str(exc)})
         return f"❌ ข้อมูลไม่ถูกต้อง: {exc}"

@@ -1,8 +1,10 @@
 """Tools that the agent can call safely."""
 
 from datetime import datetime
+import os
 
 from sheets_client import get_sheet
+from rag_engine import RAGEngine
 
 
 def validate_sale(menu: str, quantity: int, price: float) -> None:
@@ -34,6 +36,40 @@ def log_sale(menu: str, quantity: int, price: float) -> dict:
     }
 
 
+def answer_question(question: str) -> dict:
+    """Search knowledge base and return relevant answer context."""
+    try:
+        import google.generativeai as genai
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "Missing dependency: google-generativeai"
+        ) from exc
+
+    kb_path = os.path.join(os.path.dirname(__file__), "knowledge", "milklab_kb.txt")
+    if not os.path.exists(kb_path):
+        return {
+            "status": "error",
+            "error": "ไม่พบฐานความรู้",
+        }
+
+    rag = RAGEngine(kb_path)
+    results = rag.search(question, top_k=3)
+    
+    if not results:
+        return {
+            "status": "no_context",
+            "error": "ไม่พบข้อมูลที่เกี่ยวข้อง",
+        }
+
+    context = "\n".join(results)
+    return {
+        "status": "success",
+        "context": context,
+        "num_results": len(results),
+    }
+
+
 TOOLS = {
     "log_sale": log_sale,
+    "answer_question": answer_question,
 }
