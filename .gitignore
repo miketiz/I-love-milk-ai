@@ -157,3 +157,6 @@ dmypy.json
 # Windows
 Thumbs.db
 Desktop.ini
+
+# JSON files
+*.json
