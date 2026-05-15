@@ -1,4 +1,4 @@
-FROM python:3.13.5-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -6,6 +6,11 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     git \
+    libjpeg-dev \
+    libpng-dev \
+    libopenjp2-7-dev \
+    libtiff-dev \
+    libwebp-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt ./
