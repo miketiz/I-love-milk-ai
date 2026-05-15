@@ -21,4 +21,9 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-        run: python morning_report.py
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+        run: |
+          # Write the service account JSON to a file for sheets_client to use
+          printf "%s" "$GOOGLE_SERVICE_ACCOUNT_JSON" > service-account.json
+          chmod 600 service-account.json || true
+          python morning_report.py
