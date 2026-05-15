@@ -160,3 +160,6 @@ Desktop.ini
 
 # JSON files
 *.json
+
+# Agent trace logs
+agent_trace.log
