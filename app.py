@@ -1,4 +1,43 @@
 """Streamlit app for Demi RAG Chatbot."""
+# ⚠️ CRITICAL: Block torch imports BEFORE any other imports
+# sentence-transformers → transformers → tries to check for torch
+# Without this, transformers will fail trying to access torch.__spec__
+import sys
+import types
+from importlib.machinery import ModuleSpec
+
+
+def _block_torch():
+    """Pre-create dummy torch modules to prevent transformers import errors."""
+    def _create_dummy(name):
+        mod = types.ModuleType(name)
+        mod.__spec__ = None
+        mod.__loader__ = None
+        return mod
+
+    # Create torch and submodules
+    torch_mod = _create_dummy('torch')
+    sys.modules['torch'] = torch_mod
+    
+    # Create torchvision and submodules
+    tv = _create_dummy('torchvision')
+    tv.transforms = _create_dummy('torchvision.transforms')
+    tv.transforms.v2 = _create_dummy('torchvision.transforms.v2')
+    tv.transforms.v2.functional = _create_dummy('torchvision.transforms.v2.functional')
+    tv.io = _create_dummy('torchvision.io')
+    tv.ops = _create_dummy('torchvision.ops')
+    tv.ops.boxes = _create_dummy('torchvision.ops.boxes')
+    
+    sys.modules['torchvision'] = tv
+    sys.modules['torchvision.transforms'] = tv.transforms
+    sys.modules['torchvision.transforms.v2'] = tv.transforms.v2
+    sys.modules['torchvision.transforms.v2.functional'] = tv.transforms.v2.functional
+    sys.modules['torchvision.io'] = tv.io
+    sys.modules['torchvision.ops'] = tv.ops
+    sys.modules['torchvision.ops.boxes'] = tv.ops.boxes
+
+
+_block_torch()
 
 import os
 

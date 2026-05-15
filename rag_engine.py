@@ -1,5 +1,41 @@
 """Simple RAG engine for MilkLab° knowledge base."""
 
+# ⚠️ CRITICAL: Block torch imports BEFORE sentence-transformers import
+# This prevents: ValueError: torch.__spec__ is None
+import sys
+import types
+
+
+def _block_torch():
+    """Pre-create dummy torch modules."""
+    def _create_dummy(name):
+        mod = types.ModuleType(name)
+        mod.__spec__ = None
+        mod.__loader__ = None
+        return mod
+
+    torch_mod = _create_dummy('torch')
+    sys.modules['torch'] = torch_mod
+    
+    tv = _create_dummy('torchvision')
+    tv.transforms = _create_dummy('torchvision.transforms')
+    tv.transforms.v2 = _create_dummy('torchvision.transforms.v2')
+    tv.transforms.v2.functional = _create_dummy('torchvision.transforms.v2.functional')
+    tv.io = _create_dummy('torchvision.io')
+    tv.ops = _create_dummy('torchvision.ops')
+    tv.ops.boxes = _create_dummy('torchvision.ops.boxes')
+    
+    sys.modules['torchvision'] = tv
+    sys.modules['torchvision.transforms'] = tv.transforms
+    sys.modules['torchvision.transforms.v2'] = tv.transforms.v2
+    sys.modules['torchvision.transforms.v2.functional'] = tv.transforms.v2.functional
+    sys.modules['torchvision.io'] = tv.io
+    sys.modules['torchvision.ops'] = tv.ops
+    sys.modules['torchvision.ops.boxes'] = tv.ops.boxes
+
+
+_block_torch()
+
 from __future__ import annotations
 
 from dataclasses import dataclass
