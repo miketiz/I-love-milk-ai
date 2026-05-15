@@ -15,6 +15,36 @@ short_description: Streamlit template space
 
 Instagram caption generator for I Love Milk Cafe using Google Gemini AI.
 
+## Session 3: Demi RAG Chatbot
+
+This repository now includes a simple RAG chatbot for MilkLab°.
+
+Files:
+
+- `knowledge/milklab_kb.txt` - source knowledge base for the store
+- `rag_engine.py` - chunk, embed, and search the knowledge base
+- `app.py` - Streamlit chat UI for Demi
+
+### Run locally
+
+Install dependencies:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Set `GOOGLE_API_KEY` in `.env`, then run:
+
+```powershell
+streamlit run app.py
+```
+
+Ask questions like:
+
+- ในลาเต้มีน้ำตาลไหม
+- ร้านเปิดถึงกี่โมง
+- มีเมนูอะไรบ้าง
+
 ## Requirements
 
 If you want to use this source code, you need:
