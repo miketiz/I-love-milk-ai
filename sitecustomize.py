@@ -4,17 +4,27 @@ This stops Streamlit's file watcher from scanning lazy-loaded vision modules.
 """
 import sys
 import types
+from importlib.machinery import ModuleSpec
+
+
+def _create_dummy_module(name):
+    """Create a dummy module with proper __spec__ attribute."""
+    module = types.ModuleType(name)
+    # Set __spec__ to None to satisfy importlib.util.find_spec checks
+    module.__spec__ = None
+    module.__loader__ = None
+    return module
 
 
 # Pre-create dummy torch and torchvision modules BEFORE any imports
-dummy_torch = types.ModuleType('torch')
-dummy_torchvision = types.ModuleType('torchvision')
-dummy_torchvision_transforms = types.ModuleType('torchvision.transforms')
-dummy_torchvision_transforms_v2 = types.ModuleType('torchvision.transforms.v2')
-dummy_torchvision_transforms_v2.functional = types.ModuleType('torchvision.transforms.v2.functional')
-dummy_torchvision_io = types.ModuleType('torchvision.io')
-dummy_torchvision_ops = types.ModuleType('torchvision.ops')
-dummy_torchvision_ops.boxes = types.ModuleType('torchvision.ops.boxes')
+dummy_torch = _create_dummy_module('torch')
+dummy_torchvision = _create_dummy_module('torchvision')
+dummy_torchvision_transforms = _create_dummy_module('torchvision.transforms')
+dummy_torchvision_transforms_v2 = _create_dummy_module('torchvision.transforms.v2')
+dummy_torchvision_transforms_v2.functional = _create_dummy_module('torchvision.transforms.v2.functional')
+dummy_torchvision_io = _create_dummy_module('torchvision.io')
+dummy_torchvision_ops = _create_dummy_module('torchvision.ops')
+dummy_torchvision_ops.boxes = _create_dummy_module('torchvision.ops.boxes')
 
 # Add dummy functions
 def dummy_read_image(*args, **kwargs):
