@@ -9,5 +9,6 @@ python-dotenv
 python-telegram-bot
 google-generativeai
 google-genai
+transformers==4.30.2
 sentence-transformers
 faiss-cpu
