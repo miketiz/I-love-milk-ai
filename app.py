@@ -47,7 +47,7 @@ FALLBACK_MESSAGE = (
     "ขอโทษครับ Demi ยังไม่พบข้อมูลใน knowledge base สำหรับคำถามนี้ "
     "ลองถามใหม่เป็นเรื่องเมนู เวลาเปิดร้าน วิธีสั่ง หรือส่วนผสมของเมนูได้เลย"
 )
-FALLBACK_DISTANCE_THRESHOLD = 1.35
+FALLBACK_DISTANCE_THRESHOLD = 0.8
 
 st.title("🥛 Demi ผู้ช่วย AI ของ MilkLab°")
 st.caption("ถามเรื่องเมนู เวลาเปิด หรือข้อมูลร้านได้เลย")
