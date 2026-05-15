@@ -50,18 +50,26 @@ class RAGEngine:
         index.add(matrix)
         return index
 
-    def search(self, query: str, top_k: int = 3) -> List[str]:
+    def search_with_scores(self, query: str, top_k: int = 3) -> List[SearchResult]:
         top_k = max(1, min(top_k, len(self.chunks)))
         query_embedding = self.model.encode([query], show_progress_bar=False)
         query_matrix = np.array(query_embedding, dtype="float32")
-        _, indices = self.index.search(query_matrix, top_k)
-        results = [self.chunks[i] for i in indices[0] if i >= 0]
+        distances, indices = self.index.search(query_matrix, top_k)
 
-        # De-duplicate while preserving order
+        results: List[SearchResult] = []
         seen = set()
-        unique_results = []
-        for chunk in results:
-            if chunk not in seen:
-                seen.add(chunk)
-                unique_results.append(chunk)
-        return unique_results
+        for distance, index in zip(distances[0], indices[0]):
+            if index < 0:
+                continue
+
+            chunk = self.chunks[index]
+            if chunk in seen:
+                continue
+
+            seen.add(chunk)
+            results.append(SearchResult(chunk=chunk, score=float(distance)))
+
+        return results
+
+    def search(self, query: str, top_k: int = 3) -> List[str]:
+        return [result.chunk for result in self.search_with_scores(query, top_k=top_k)]
