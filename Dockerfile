@@ -18,9 +18,12 @@ COPY app.py ./
 COPY rag_engine.py ./
 COPY knowledge/ ./knowledge/
 COPY src/ ./src/
+COPY .streamlit/ .streamlit/
 
 RUN pip3 install --upgrade pip setuptools wheel && \
     pip3 install -r requirements.txt --no-cache-dir
+
+ENV STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
 
 EXPOSE 8501
 
