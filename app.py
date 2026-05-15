@@ -10,23 +10,35 @@ from rag_engine import RAGEngine
 
 load_dotenv(dotenv_path=".env", override=True)
 
-api_key = os.getenv("GOOGLE_API_KEY")
+st.set_page_config(page_title="Demi RAG Chatbot", page_icon="🥛")
+
+
+def get_api_key() -> str | None:
+    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if api_key:
+        return api_key
+
+    try:
+        return st.secrets.get("GOOGLE_API_KEY") or st.secrets.get("GEMINI_API_KEY")
+    except Exception:  # noqa: BLE001
+        return None
+
+
+api_key = get_api_key()
 if not api_key:
-    raise ValueError("GOOGLE_API_KEY not found in .env")
+    raise ValueError("GOOGLE_API_KEY (or GEMINI_API_KEY) not found in environment or Streamlit secrets")
 
 client = genai.Client(api_key=api_key)
 MODEL = "gemini-2.5-flash"
 
 
 @st.cache_resource
-
 def load_rag() -> RAGEngine:
     return RAGEngine("knowledge/milklab_kb.txt")
 
 
 rag = load_rag()
 
-st.set_page_config(page_title="Demi RAG Chatbot", page_icon="🥛")
 st.title("🥛 Demi ผู้ช่วย AI ของ MilkLab°")
 st.caption("ถามเรื่องเมนู เวลาเปิด หรือข้อมูลร้านได้เลย")
 

@@ -25,6 +25,16 @@ Files:
 - `rag_engine.py` - chunk, embed, and search the knowledge base
 - `app.py` - Streamlit chat UI for Demi
 
+### Deploy to HuggingFace Spaces
+
+1. Go to HuggingFace Spaces and create a new Space.
+2. Choose SDK: `Streamlit`.
+3. Connect this GitHub repo or upload the files.
+4. Add a secret named `GOOGLE_API_KEY` in Spaces settings.
+5. Wait for the build to finish, then open the Space URL.
+
+The app reads `GOOGLE_API_KEY` from environment variables or Streamlit secrets.
+
 ### Run locally
 
 Install dependencies:
