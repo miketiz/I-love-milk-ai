@@ -34,7 +34,13 @@ SYSTEM_INSTRUCTION = """
 - ตอบ JSON เท่านั้น ห้ามมีข้อความอื่น
 - quantity ต้องเป็นจำนวนเต็ม
 - price เป็นตัวเลข
+- ถ้าคิดว่าเป็นคำสั่งบันทึกยอดขาย ให้ตอบ action log_sale เสมอ
+- ถ้าไม่แน่ใจ ให้ตอบ unknown แทนการอธิบาย
 """.strip()
+
+SALE_PATTERN = re.compile(
+    r"(?P<menu>.+?)\s+(?P<quantity>\d+)\s*(?:แก้ว|ที่|ชิ้น|รายการ)?\s*(?:ราคา|ละ)?\s*(?P<price>\d+(?:\.\d+)?)\s*(?:บาท|฿)?$"
+)
 
 
 def write_trace(event: str, data: dict) -> None:
@@ -71,6 +77,26 @@ def normalize_json_text(raw: str) -> str:
     return text
 
 
+def fallback_sale_action(user_input: str) -> dict | None:
+    """Extract a sale action directly from common Thai sale phrases."""
+    cleaned = re.sub(r"\s+", " ", user_input.strip())
+
+    prefixes = ["บันทึกยอดขาย", "บันทึก", "ขาย", "จด", "เพิ่มยอดขาย"]
+    for prefix in prefixes:
+        if cleaned.startswith(prefix):
+            cleaned = cleaned[len(prefix) :].strip()
+            break
+
+    match = SALE_PATTERN.search(cleaned)
+    if not match:
+        return None
+
+    menu = match.group("menu").strip()
+    quantity = int(match.group("quantity"))
+    price = float(match.group("price"))
+    return {"action": "log_sale", "args": {"menu": menu, "quantity": quantity, "price": price}}
+
+
 def run_agent(user_input: str) -> str:
     write_trace("user_input", {"message": user_input})
 
@@ -83,7 +109,12 @@ def run_agent(user_input: str) -> str:
         action_data = json.loads(normalized)
     except json.JSONDecodeError:
         write_trace("parse_error", {"raw": raw, "normalized": normalized})
-        return "❌ AI ตอบกลับไม่เป็น JSON ที่ถูกต้อง"
+        fallback_action = fallback_sale_action(user_input)
+        if fallback_action:
+            write_trace("fallback_action", {"action": fallback_action})
+            action_data = fallback_action
+        else:
+            return "❌ AI ตอบกลับไม่เป็น JSON ที่ถูกต้อง"
 
     action = action_data.get("action")
     args = action_data.get("args", {})
