@@ -14,14 +14,18 @@ st.set_page_config(page_title="Demi RAG Chatbot", page_icon="🥛")
 
 
 def get_api_key() -> str | None:
+    # Check environment variables (HF Spaces, Docker, local .env)
     api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     if api_key:
         return api_key
 
+    # Check Streamlit secrets (local development)
     try:
         return st.secrets.get("GOOGLE_API_KEY") or st.secrets.get("GEMINI_API_KEY")
     except Exception:  # noqa: BLE001
-        return None
+        pass
+    
+    return None
 
 
 api_key = get_api_key()
