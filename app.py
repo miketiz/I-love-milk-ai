@@ -4,6 +4,8 @@ import os
 
 # Streamlit's source watcher can scan lazy modules inside site-packages and
 # trigger false import errors from transformers. Disable it before importing Streamlit.
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("STREAMLIT_SERVER_FILE_WATCHER_TYPE", "none")
 
 import streamlit as st

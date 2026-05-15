@@ -1,6 +1,8 @@
 FROM python:3.12-slim
 
 WORKDIR /app
+ENV TRANSFORMERS_OFFLINE=1
+ENV HF_HUB_OFFLINE=1
 
 RUN apt-get update && apt-get install -y \
     build-essential \
