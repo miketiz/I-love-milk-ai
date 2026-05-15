@@ -14,7 +14,8 @@ COPY rag_engine.py ./
 COPY knowledge/ ./knowledge/
 COPY src/ ./src/
 
-RUN pip3 install -r requirements.txt
+RUN pip3 install --upgrade pip setuptools wheel && \
+    pip3 install -r requirements.txt --no-cache-dir
 
 EXPOSE 8501
 
