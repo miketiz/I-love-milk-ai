@@ -11,5 +11,3 @@ google-generativeai
 google-genai
 sentence-transformers
 faiss-cpu
-torch>=2.0.0
-torchvision>=0.15.0
