@@ -100,20 +100,21 @@ def fallback_sale_action(user_input: str) -> dict | None:
 def run_agent(user_input: str) -> str:
     write_trace("user_input", {"message": user_input})
 
-    raw = ask_llm_for_action(user_input)
-    write_trace("llm_response", {"raw": raw})
+    # Fast path: if the user clearly typed a sale command, execute it directly.
+    direct_action = fallback_sale_action(user_input)
+    if direct_action:
+        write_trace("direct_action", {"action": direct_action})
+        action_data = direct_action
+    else:
+        raw = ask_llm_for_action(user_input)
+        write_trace("llm_response", {"raw": raw})
 
-    normalized = normalize_json_text(raw)
+        normalized = normalize_json_text(raw)
 
-    try:
-        action_data = json.loads(normalized)
-    except json.JSONDecodeError:
-        write_trace("parse_error", {"raw": raw, "normalized": normalized})
-        fallback_action = fallback_sale_action(user_input)
-        if fallback_action:
-            write_trace("fallback_action", {"action": fallback_action})
-            action_data = fallback_action
-        else:
+        try:
+            action_data = json.loads(normalized)
+        except json.JSONDecodeError:
+            write_trace("parse_error", {"raw": raw, "normalized": normalized})
             return "❌ AI ตอบกลับไม่เป็น JSON ที่ถูกต้อง"
 
     action = action_data.get("action")
