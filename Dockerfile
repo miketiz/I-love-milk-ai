@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt ./
 COPY app.py ./
 COPY rag_engine.py ./
+COPY sitecustomize.py ./
 COPY knowledge/ ./knowledge/
 COPY src/ ./src/
 COPY .streamlit/ .streamlit/
@@ -23,6 +24,7 @@ COPY .streamlit/ .streamlit/
 RUN pip3 install --upgrade pip setuptools wheel && \
     pip3 install -r requirements.txt --no-cache-dir
 
+ENV PYTHONPATH=/app:${PYTHONPATH}
 ENV STREAMLIT_SERVER_FILE_WATCHER_TYPE=none
 
 EXPOSE 8501
