@@ -1,14 +1,5 @@
-altair
-pandas
-streamlit
-gspread
-google-auth
-google-auth-oauthlib
-requests
+﻿streamlit
 python-dotenv
-python-telegram-bot
-google-generativeai
-google-genai
-transformers==4.30.2
 sentence-transformers
 faiss-cpu
+google-generativeai
