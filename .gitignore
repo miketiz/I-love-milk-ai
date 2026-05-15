@@ -124,6 +124,20 @@ ENV/
 env.bak/
 venv.bak/
 
+# Agent & Logs
+agent_trace.log
+*.log
+
+# Sensitive files
+service-account.json
+*.json
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+
 # Spyder project settings
 .spyderproject
 .spyproject
