@@ -29,10 +29,16 @@ def _block_torch():
     torch_mod.cuda.device_count = lambda: 0
     torch_mod.distributed = _create_dummy('torch.distributed')
     torch_mod.multiprocessing = _create_dummy('torch.multiprocessing')
+    torch_mod.nn = _create_dummy('torch.nn')
+    torch_mod.nn.Module = type('Module', (), {})
+    torch_mod.nn.Parameter = type('Parameter', (), {})
+    torch_mod.optim = _create_dummy('torch.optim')
     sys.modules['torch'] = torch_mod
     sys.modules['torch.cuda'] = torch_mod.cuda
     sys.modules['torch.distributed'] = torch_mod.distributed
     sys.modules['torch.multiprocessing'] = torch_mod.multiprocessing
+    sys.modules['torch.nn'] = torch_mod.nn
+    sys.modules['torch.optim'] = torch_mod.optim
     
     tv = _create_dummy('torchvision')
     tv.transforms = _create_dummy('torchvision.transforms')
