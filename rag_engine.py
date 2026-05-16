@@ -19,6 +19,10 @@ def _block_torch():
         return mod
 
     torch_mod = _create_dummy('torch')
+    # Add stub tensor types that transformers expects
+    torch_mod.LongTensor = type('LongTensor', (), {})
+    torch_mod.FloatTensor = type('FloatTensor', (), {})
+    torch_mod.Tensor = type('Tensor', (), {})
     sys.modules['torch'] = torch_mod
     
     tv = _create_dummy('torchvision')
