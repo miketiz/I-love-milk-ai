@@ -6,13 +6,15 @@ from __future__ import annotations
 # This prevents: ValueError: torch.__spec__ is None
 import sys
 import types
+import importlib.util
 
 
 def _block_torch():
     """Pre-create dummy torch modules."""
     def _create_dummy(name):
         mod = types.ModuleType(name)
-        mod.__spec__ = None
+        # Create a proper spec instead of None to avoid ValueError
+        mod.__spec__ = importlib.util.spec_from_loader(name, loader=None)
         mod.__loader__ = None
         return mod
 
