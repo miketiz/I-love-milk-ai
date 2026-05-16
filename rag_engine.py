@@ -1,5 +1,7 @@
 """Simple RAG engine for MilkLab° knowledge base."""
 
+from __future__ import annotations
+
 # ⚠️ CRITICAL: Block torch imports BEFORE sentence-transformers import
 # This prevents: ValueError: torch.__spec__ is None
 import sys
