@@ -38,8 +38,6 @@ def _block_torch():
 
 _block_torch()
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
