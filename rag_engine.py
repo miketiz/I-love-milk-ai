@@ -1,74 +1,42 @@
-"""Simple RAG engine for MilkLab° knowledge base."""
-
-from __future__ import annotations
-
-# ⚠️ CRITICAL: Block torch imports BEFORE sentence-transformers import
-# This prevents: ValueError: torch.__spec__ is None
-import sys
-import types
-import importlib.util
-
-
-def _block_torch():
-    """Pre-create dummy torch modules."""
-    def _create_dummy(name):
-        mod = types.ModuleType(name)
-        # Create a proper spec instead of None to avoid ValueError
-        mod.__spec__ = importlib.util.spec_from_loader(name, loader=None)
-        mod.__loader__ = None
-        return mod
-
-    torch_mod = _create_dummy('torch')
-    # Add stub tensor types and common attributes that transformers expects
-    torch_mod.LongTensor = type('LongTensor', (), {})
-    torch_mod.FloatTensor = type('FloatTensor', (), {})
-    torch_mod.Tensor = type('Tensor', (), {})
-    torch_mod.device = type('device', (), {})
-    torch_mod.cuda = _create_dummy('torch.cuda')
-    torch_mod.cuda.is_available = lambda: False
-    torch_mod.cuda.device_count = lambda: 0
-    torch_mod.distributed = _create_dummy('torch.distributed')
-    torch_mod.multiprocessing = _create_dummy('torch.multiprocessing')
-    torch_mod.nn = _create_dummy('torch.nn')
-    torch_mod.nn.Module = type('Module', (), {})
-    torch_mod.nn.Parameter = type('Parameter', (), {})
-    torch_mod.optim = _create_dummy('torch.optim')
-    sys.modules['torch'] = torch_mod
-    sys.modules['torch.cuda'] = torch_mod.cuda
-    sys.modules['torch.distributed'] = torch_mod.distributed
-    sys.modules['torch.multiprocessing'] = torch_mod.multiprocessing
-    sys.modules['torch.nn'] = torch_mod.nn
-    sys.modules['torch.optim'] = torch_mod.optim
-    
-    tv = _create_dummy('torchvision')
-    tv.transforms = _create_dummy('torchvision.transforms')
-    tv.transforms.v2 = _create_dummy('torchvision.transforms.v2')
-    tv.transforms.v2.functional = _create_dummy('torchvision.transforms.v2.functional')
-    tv.io = _create_dummy('torchvision.io')
-    tv.ops = _create_dummy('torchvision.ops')
-    tv.ops.boxes = _create_dummy('torchvision.ops.boxes')
-    
-    sys.modules['torchvision'] = tv
-    sys.modules['torchvision.transforms'] = tv.transforms
-    sys.modules['torchvision.transforms.v2'] = tv.transforms.v2
-    sys.modules['torchvision.transforms.v2.functional'] = tv.transforms.v2.functional
-    sys.modules['torchvision.io'] = tv.io
-    sys.modules['torchvision.ops'] = tv.ops
-    sys.modules['torchvision.ops.boxes'] = tv.ops.boxes
-
-
-_block_torch()
-
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 import re
+import hashlib
 
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
+
+EMBED_DIM = 384
+
+try:
+    from sentence_transformers import SentenceTransformer
+except Exception:
+    SentenceTransformer = None
 
 EMBED_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+
+
+class _FallbackSentenceTransformer:
+    """Lightweight embedder used when sentence-transformers cannot be imported."""
+
+    def __init__(self, dimension: int = EMBED_DIM):
+        self.dimension = dimension
+
+    def encode(self, texts, show_progress_bar: bool = False):
+        if isinstance(texts, str):
+            texts = [texts]
+
+        matrix = np.zeros((len(texts), self.dimension), dtype=np.float32)
+        for row_index, text in enumerate(texts):
+            for token in re.findall(r"\w+", text.lower()):
+                token_hash = hashlib.md5(token.encode("utf-8")).hexdigest()
+                column_index = int(token_hash, 16) % self.dimension
+                matrix[row_index, column_index] += 1.0
+
+        norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        return matrix / norms
 
 
 @dataclass
@@ -80,9 +48,18 @@ class SearchResult:
 class RAGEngine:
     def __init__(self, kb_path: str):
         self.kb_path = Path(kb_path)
-        self.model = SentenceTransformer(EMBED_MODEL)
+        self.model = self._create_model()
         self.chunks = self._load_and_chunk(self.kb_path)
         self.index = self._build_index()
+
+    def _create_model(self):
+        if SentenceTransformer is None:
+            return _FallbackSentenceTransformer()
+
+        try:
+            return SentenceTransformer(EMBED_MODEL)
+        except Exception:
+            return _FallbackSentenceTransformer()
 
     def _load_and_chunk(self, path: Path) -> List[str]:
         text = path.read_text(encoding="utf-8")
