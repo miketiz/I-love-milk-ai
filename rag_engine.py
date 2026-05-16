@@ -86,6 +86,26 @@ class RAGEngine:
 
     def search_with_scores(self, query: str, top_k: int = 3) -> List[SearchResult]:
         top_k = max(1, min(top_k, len(self.chunks)))
+
+        normalized_query = re.sub(r"\s+", " ", query.strip().lower())
+        exact_matches = []
+        for chunk in self.chunks:
+            normalized_chunk = re.sub(r"\s+", " ", chunk.strip().lower())
+            if normalized_query and (
+                normalized_query in normalized_chunk or normalized_chunk in normalized_query
+            ):
+                exact_matches.append(SearchResult(chunk=chunk, score=0.0))
+
+        if exact_matches:
+            seen_exact = set()
+            deduped_exact = []
+            for result in exact_matches:
+                if result.chunk in seen_exact:
+                    continue
+                seen_exact.add(result.chunk)
+                deduped_exact.append(result)
+            return deduped_exact[:top_k]
+
         query_embedding = self.model.encode([query], show_progress_bar=False)
         query_matrix = np.array(query_embedding, dtype="float32")
         distances, indices = self.index.search(query_matrix, top_k)
